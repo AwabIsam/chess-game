@@ -4,6 +4,6 @@ class chessPiece {
 		this.name = name;
 		this.isAttacked = isAttacked;
 		this.color = color;
-		this.squareid = squareid;
 	}
 }
+export default chessPiece;
