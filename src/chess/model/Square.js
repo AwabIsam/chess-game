@@ -4,8 +4,8 @@ export const Square = ({ id, image, Even }) => {
 		<div
 			className={
 				Even
-					? "w-16 h-16 border-[1px] bg-obsdOrange grid place-content-center"
-					: "w-16 h-16 border-[1px] bg-gray grid place-content-center"
+					? "w-16 h-16 bg-obsdOrange grid place-content-center"
+					: "w-16 h-16 bg-gray grid place-content-center"
 			}
 		>
 			{image && (
