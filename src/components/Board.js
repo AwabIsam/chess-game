@@ -8,20 +8,8 @@ const chess = new Chess();
 export const Board = () => {
 	const chessBoardRef = useRef(null);
 	while (!chess.isGameOver()) {
-		// Initailizing the Pieces
-		const {
-			pieces,
-			setPieces,
-			gridX,
-			setGridX,
-			gridY,
-			setGridY,
-			activePiece,
-			setActivePiece,
-			axisX,
-			axisY,
-			pieceCode,
-		} = Pieces();
+		// Initailizing the Pieces, States and required arrays
+		const { pieces, setPieces, gridX, setGridX, gridY, setGridY, activePiece, setActivePiece, axisX, axisY, pieceCode } = Pieces();
 		const horizontalaxis = ["a", "b", "c", "d", "e", "f", "g", "h"];
 		const verticalaxis = ["8", "7", "6", "5", "4", "3", "2", "1"];
 		const chessBoard = [];
@@ -31,6 +19,7 @@ export const Board = () => {
 			const chessboard = chessBoardRef.current;
 
 			if (element.classList.contains("chessPiece") && chessboard) {
+				// Get initial co-ordinates on 'grab'
 				setGridX(Math.floor((e.clientX - chessboard.offsetLeft) / 64));
 				setGridY(Math.floor((e.clientY - chessboard.offsetTop) / 64));
 				setActivePiece(element);
@@ -40,12 +29,12 @@ export const Board = () => {
 		function movePiece(e) {
 			const chessboard = chessBoardRef.current;
 			if (activePiece && chessboard) {
+				// if a piece is 'grabbed' and the chesboard is rendered
+				// Get the axes of the board to restrict movement to board
 				const minX = chessboard.offsetLeft - 10;
 				const minY = chessboard.offsetTop - 5;
-				const maxX =
-					chessboard.offsetLeft + chessboard.clientWidth - 36;
-				const maxY =
-					chessboard.offsetTop + chessboard.clientHeight - 44;
+				const maxX = chessboard.offsetLeft + chessboard.clientWidth - 36;
+				const maxY = chessboard.offsetTop + chessboard.clientHeight - 44;
 
 				const x = e.clientX - 32;
 				const y = e.clientY - 32;
@@ -75,66 +64,120 @@ export const Board = () => {
 		function dropPiece(e) {
 			const chessboard = chessBoardRef.current;
 			if (activePiece && chessboard) {
+				// Get axes of new position
 				const x = Math.floor((e.clientX - chessboard.offsetLeft) / 64);
 				const y = Math.floor((e.clientY - chessboard.offsetTop) / 64);
+				// Set the axes to 'fen' format for chessjs library
 				const chessY = axisY[y];
 				const chessX = axisX[x];
 
 				setPieces((value) => {
+					// Map through the pieces
 					const Pieces = value.map((piece) => {
 						if (piece.x === gridX && piece.y === gridY) {
+							// Find piece
 							for (let i = 0; i < pieceCode.length; i++) {
+								// Get the key and value from the pieceCode array
 								const key = Object.keys(pieceCode[i]);
-								const value = Object.values(pieceCode[i]);
 								if (piece.image === key[0]) {
-									console.log(piece.currentPos);
+									// Ensure we have the correct piece
+									// Get array of allowed moves
 									const movesAllowed = chess.moves({
 										square: `${piece.currentPos}`,
 									});
-									console.log(`Moves are: ${movesAllowed}`);
-									const moveValidation = `${value}${chessX}${chessY}`;
+									// Get turn
+									const turn = chess.turn();
+									// Get move for chessjs
 									const move = `${chessX}${chessY}`;
-									const delPiece = pieces.find(
-										(p) => p.currentPos === move
-									);
-									const delIndex = pieces.findIndex(
-										(p) => p.currentPos === move
-									);
+									// Get move FOR fen
+									let chessMove = 0;
+									for (let l of movesAllowed) {
+										if (l.includes(move)) {
+											chessMove = l;
+										} else if (l.includes("O-O") && (move === "g1" || move === "g8")) {
+											chessMove = l;
+										} else if (l.includes("O-O-O") && (move === "c1" || move === "c8")) {
+											chessMove = l;
+										}
+									}
+									// Save 'Attacked' piece
 
-									console.log(delPiece);
-									if (delPiece) {
+									const delPiece = pieces.find((p) => p.currentPos === move);
+									if (delPiece && movesAllowed.includes(chessMove)) {
+										// If we are attacking
 										try {
-											console.log(
-												"Attacking a piece....."
-											);
-											chess.move(
-												`${piece.currentPos}x${move}`
-											);
-											pieces.splice(delIndex, 1);
+											chess.move(`${chessMove}`);
+											// Changeing array (removing the attacked piece)
+											const updatedPieces = pieces.reduce((results, piece) => {
+												if (delPiece.currentPos !== piece.currentPos) {
+													results.push(piece);
+												}
+												return results;
+											}, []);
+											setPieces(updatedPieces);
+											// Snap piece to new axes
 											piece.x = x;
 											piece.y = y;
 											piece.currentPos = move;
-											console.log(chess.fen());
 										} catch (error) {
 											console.log(error);
 										}
-									}
-									console.log(`Move Made ${moveValidation}`);
-									if (movesAllowed.includes(moveValidation)) {
+									} else if (movesAllowed.includes(chessMove)) {
+										// If we aren't attacking -->
 										try {
 											console.log("Move is Allowed");
 											// Check if dropped on piece
 
-											chess.move({
-												from: `${piece.currentPos}`,
-												to: `${move}`,
-											});
-
+											chess.move(`${chessMove}`);
+											if (chessMove === "O-O") {
+												const updatedPieces = pieces.reduce((results, piece) => {
+													if (turn === "w" && piece.image.includes("white_Rook")) {
+														if (piece.currentPos === "h1") {
+															piece.x = 5;
+															piece.y = 7;
+															piece.currentPos = "f1";
+														}
+														results.push(piece);
+													} else if (turn === "b" && piece.image.includes("black_Rook")) {
+														if (piece.currentPos === "h8") {
+															piece.x = 5;
+															piece.y = 0;
+															piece.currentPos = "f8";
+														}
+														results.push(piece);
+													} else {
+														results.push(piece);
+													}
+													return results;
+												}, []);
+												setPieces(updatedPieces);
+											}
+											if (chessMove === "O-O-O") {
+												const updatedPieces = pieces.reduce((results, piece) => {
+													if (turn === "w" && piece.image.includes("white_Rook")) {
+														if (piece.currentPos === "a1") {
+															piece.x = 3;
+															piece.y = 7;
+															piece.currentPos = "d1";
+														}
+														results.push(piece);
+													} else if (turn === "b" && piece.image.includes("black_Rook")) {
+														if (piece.currentPos === "a8") {
+															piece.x = 3;
+															piece.y = 0;
+															piece.currentPos = "d8";
+														}
+														results.push(piece);
+													} else {
+														results.push(piece);
+													}
+													return results;
+												}, []);
+												setPieces(updatedPieces);
+											}
 											piece.x = x;
 											piece.y = y;
 											piece.currentPos = move;
-
-											console.log(piece);
 										} catch (error) {
 											console.log(error);
 										}
@@ -142,9 +185,7 @@ export const Board = () => {
 										console.log("Move is Not Allowed");
 
 										activePiece.style.position = "relative";
-										activePiece.style.removeProperty(
-											"left"
-										);
+										activePiece.style.removeProperty("left");
 										activePiece.style.removeProperty("Top");
 									}
 								}
@@ -158,6 +199,7 @@ export const Board = () => {
 			}
 		}
 
+		// Everything below here is to render the chessboard and pieces
 		for (let j = 0; j < verticalaxis.length; j++) {
 			for (let i = 0; i < horizontalaxis.length; i++) {
 				const isEven = (i + j + 2) % 2 === 0;
@@ -168,14 +210,7 @@ export const Board = () => {
 					if (piece.x === i && piece.y === j) image = piece.image;
 				});
 
-				chessBoard.push(
-					<Square
-						key={`${horizontalaxis[i]}${verticalaxis[j]}`}
-						id={`${i},${j}`}
-						image={image}
-						Even={isEven}
-					/>
-				);
+				chessBoard.push(<Square key={`${horizontalaxis[i]}${verticalaxis[j]}`} id={`${i},${j}`} image={image} Even={isEven} />);
 			}
 		}
 
