@@ -98,6 +98,9 @@ for (let i = 0; i < 8; i++) {
 		x: i,
 		y: 6,
 		currentPos: `${axisX[i]}${axisY[6]}`,
+		promote: false,
+		prePromotePos: 0,
+		tempMove: 0,
 	});
 }
 
@@ -107,6 +110,9 @@ for (let i = 0; i < 8; i++) {
 		x: i,
 		y: 1,
 		currentPos: `${axisX[i]}${axisY[1]}`,
+		promote: false,
+		prePromotePos: 0,
+		tempMove: 0,
 	});
 }
 
@@ -115,6 +121,7 @@ export const Pieces = () => {
 	const [activePiece, setActivePiece] = useState();
 	const [gridX, setGridX] = useState();
 	const [gridY, setGridY] = useState();
+	const [promotionOptions, setPromotionOptions] = useState(false);
 	return {
 		pieces,
 		setPieces,
@@ -127,5 +134,7 @@ export const Pieces = () => {
 		axisX,
 		axisY,
 		pieceCode,
+		promotionOptions,
+		setPromotionOptions,
 	};
 };

@@ -8,18 +8,75 @@ const chess = new Chess();
 export const Board = () => {
 	const chessBoardRef = useRef(null);
 	while (!chess.isGameOver()) {
-		// Initailizing the Pieces, States and required arrays
-		const { pieces, setPieces, gridX, setGridX, gridY, setGridY, activePiece, setActivePiece, axisX, axisY, pieceCode } = Pieces();
+		const {
+			pieces,
+			setPieces,
+			gridX,
+			setGridX,
+			gridY,
+			setGridY,
+			activePiece,
+			setActivePiece,
+			axisX,
+			axisY,
+			pieceCode,
+			promotionOptions,
+			setPromotionOptions,
+		} = Pieces();
 		const horizontalaxis = ["a", "b", "c", "d", "e", "f", "g", "h"];
 		const verticalaxis = ["8", "7", "6", "5", "4", "3", "2", "1"];
 		const chessBoard = [];
+
+		let elementSRC = "";
+		let chessMove = 0;
+		function promotePawn(e) {
+			elementSRC = e.target.attributes.src.nodeValue;
+			const updatedPieces = pieces.reduce((results, piece) => {
+				const movesAllowed = chess.moves({ square: `${piece.prePromotePos}` });
+				if (movesAllowed) {
+					console.log(piece);
+					const delPiece = pieces.find((p) => movesAllowed.some((move) => move.includes(p.currentPos)));
+					for (let z of movesAllowed) {
+						if (elementSRC.includes("Queen")) {
+							if (z.includes("Q")) {
+								chessMove = z;
+							}
+						} else if (elementSRC.includes("Rook")) {
+							if (z.includes("R")) {
+								chessMove = z;
+							}
+						} else if (elementSRC.includes("Knight")) {
+							if (z.includes("N")) {
+								chessMove = z;
+							}
+						} else if (elementSRC.includes("Bishop")) {
+							if (z.includes("B")) {
+								chessMove = z;
+							}
+						}
+					}
+					console.log(delPiece);
+					// You are still conditioning to that the piece must have a prePromotePos, which is only the piece to be promoted so its the only one thats getting pushed
+					if (delPiece && delPiece.currentPos !== piece.currentPos) {
+						piece.image = elementSRC;
+						piece.currentPos = piece.tempMove;
+						results.push(piece);
+					}
+				}
+
+				return results;
+			}, []);
+
+			chess.move(chessMove);
+			setPieces(updatedPieces);
+			setPromotionOptions(false);
+		}
 
 		function grabPiece(e) {
 			const element = e.target;
 			const chessboard = chessBoardRef.current;
 
 			if (element.classList.contains("chessPiece") && chessboard) {
-				// Get initial co-ordinates on 'grab'
 				setGridX(Math.floor((e.clientX - chessboard.offsetLeft) / 64));
 				setGridY(Math.floor((e.clientY - chessboard.offsetTop) / 64));
 				setActivePiece(element);
@@ -29,8 +86,6 @@ export const Board = () => {
 		function movePiece(e) {
 			const chessboard = chessBoardRef.current;
 			if (activePiece && chessboard) {
-				// if a piece is 'grabbed' and the chesboard is rendered
-				// Get the axes of the board to restrict movement to board
 				const minX = chessboard.offsetLeft - 10;
 				const minY = chessboard.offsetTop - 5;
 				const maxX = chessboard.offsetLeft + chessboard.clientWidth - 36;
@@ -64,32 +119,22 @@ export const Board = () => {
 		function dropPiece(e) {
 			const chessboard = chessBoardRef.current;
 			if (activePiece && chessboard) {
-				// Get axes of new position
 				const x = Math.floor((e.clientX - chessboard.offsetLeft) / 64);
 				const y = Math.floor((e.clientY - chessboard.offsetTop) / 64);
-				// Set the axes to 'fen' format for chessjs library
 				const chessY = axisY[y];
 				const chessX = axisX[x];
 
 				setPieces((value) => {
-					// Map through the pieces
 					const Pieces = value.map((piece) => {
 						if (piece.x === gridX && piece.y === gridY) {
-							// Find piece
 							for (let i = 0; i < pieceCode.length; i++) {
-								// Get the key and value from the pieceCode array
 								const key = Object.keys(pieceCode[i]);
 								if (piece.image === key[0]) {
-									// Ensure we have the correct piece
-									// Get array of allowed moves
 									const movesAllowed = chess.moves({
 										square: `${piece.currentPos}`,
 									});
-									// Get turn
 									const turn = chess.turn();
-									// Get move for chessjs
 									const move = `${chessX}${chessY}`;
-									// Get move FOR fen
 									let chessMove = 0;
 									for (let l of movesAllowed) {
 										if (l.includes(move)) {
@@ -100,14 +145,11 @@ export const Board = () => {
 											chessMove = l;
 										}
 									}
-									// Save 'Attacked' piece
 
 									const delPiece = pieces.find((p) => p.currentPos === move);
-									if (delPiece && movesAllowed.includes(chessMove)) {
-										// If we are attacking
+									if (delPiece && movesAllowed.includes(chessMove) && !movesAllowed.some((moves) => moves.includes("="))) {
 										try {
 											chess.move(`${chessMove}`);
-											// Changeing array (removing the attacked piece)
 											const updatedPieces = pieces.reduce((results, piece) => {
 												if (delPiece.currentPos !== piece.currentPos) {
 													results.push(piece);
@@ -115,18 +157,15 @@ export const Board = () => {
 												return results;
 											}, []);
 											setPieces(updatedPieces);
-											// Snap piece to new axes
 											piece.x = x;
 											piece.y = y;
 											piece.currentPos = move;
 										} catch (error) {
 											console.log(error);
 										}
-									} else if (movesAllowed.includes(chessMove)) {
-										// If we aren't attacking -->
+									} else if (movesAllowed.includes(chessMove) && !movesAllowed.some((moves) => moves.includes("="))) {
 										try {
 											console.log("Move is Allowed");
-											// Check if dropped on piece
 
 											chess.move(`${chessMove}`);
 											if (chessMove === "O-O") {
@@ -181,6 +220,14 @@ export const Board = () => {
 										} catch (error) {
 											console.log(error);
 										}
+									} else if (movesAllowed.some((moves) => moves.includes("="))) {
+										console.log("Promotion Sequence Entered");
+										piece.prePromotePos = piece.currentPos;
+										piece.tempMove = move;
+										piece.x = x;
+										piece.y = y;
+										setPromotionOptions(true);
+										piece.promote = true;
 									} else {
 										console.log("Move is Not Allowed");
 
@@ -199,7 +246,6 @@ export const Board = () => {
 			}
 		}
 
-		// Everything below here is to render the chessboard and pieces
 		for (let j = 0; j < verticalaxis.length; j++) {
 			for (let i = 0; i < horizontalaxis.length; i++) {
 				const isEven = (i + j + 2) % 2 === 0;
@@ -216,6 +262,29 @@ export const Board = () => {
 
 		return (
 			<>
+				{promotionOptions && (
+					<div className="flex flex-row absolute bg-[rgba(0,0,0,0.7)] rounded-lg px-4 w-80 justify-evenly items-center h-80">
+						<img
+							onClick={(e) => promotePawn(e)}
+							className="w-min hover:bg-stone-400 rounded-lg p-5"
+							src="assets/white_Queen.png"
+							alt=""
+						/>
+						<img onClick={(e) => promotePawn(e)} className="w-min hover:bg-stone-400 rounded-lg p-5" src="assets/white_Rook.png" alt="" />
+						<img
+							onClick={(e) => promotePawn(e)}
+							className="w-min hover:bg-stone-400 rounded-lg p-5"
+							src="assets/white_Knight.png"
+							alt=""
+						/>
+						<img
+							onClick={(e) => promotePawn(e)}
+							className="w-min hover:bg-stone-400 rounded-lg p-5"
+							src="assets/white_Bishop.png"
+							alt=""
+						/>
+					</div>
+				)}
 				<div className="flex flex-col text-white">
 					{verticalaxis.map((axis) => (
 						<div className="h-16 mx-4" key={axis}>
