@@ -27,6 +27,7 @@ export const Board = () => {
 		const verticalaxis = ["8", "7", "6", "5", "4", "3", "2", "1"];
 		const chessBoard = [];
 		const turn = chess.turn();
+		let fen = chess.fen();
 
 		let elementSRC = "";
 		let chessMove = 0;
@@ -84,6 +85,8 @@ export const Board = () => {
 			}, []);
 			console.log(updatedPieces);
 			chess.move(chessMove);
+			fen = chess.fen();
+			console.log(fen);
 			setPieces(updatedPieces);
 			setPromotionOptions(false);
 			console.log(pieces);
@@ -162,11 +165,14 @@ export const Board = () => {
 											chessMove = l;
 										}
 									}
-
+									console.log(movesAllowed);
+									console.log(chessMove);
 									const delPiece = pieces.find((p) => p.currentPos === move);
 									if (delPiece && movesAllowed.includes(chessMove) && !movesAllowed.some((moves) => moves.includes("="))) {
 										try {
 											chess.move(`${chessMove}`);
+											fen = chess.fen();
+											console.log(fen);
 											const updatedPieces = pieces.reduce((results, piece) => {
 												if (delPiece.currentPos !== piece.currentPos) {
 													results.push(piece);
@@ -180,11 +186,32 @@ export const Board = () => {
 										} catch (error) {
 											console.log(error);
 										}
+									} else if (movesAllowed.includes(chessMove) & fen.includes(move)) {
+										if (move.includes("6")) {
+											const lowerSquare = `${chessX}5`;
+											const delPiece = pieces.find((p) => p.currentPos === lowerSquare);
+											const updatedPieces = pieces.reduce((results, piece) => {
+												if (delPiece.currentPos !== piece.currentPos) {
+													results.push(piece);
+												}
+												return results;
+											}, []);
+											setPieces(updatedPieces);
+										}
+										fen = chess.fen();
+										console.log(fen);
+										chess.move(chessMove);
+										piece.x = x;
+										piece.y = y;
+										piece.currentPos = move;
+										console.log("En Passant available");
 									} else if (movesAllowed.includes(chessMove) && !movesAllowed.some((moves) => moves.includes("="))) {
 										try {
 											console.log("Move is Allowed");
 
 											chess.move(`${chessMove}`);
+											fen = chess.fen();
+											console.log(fen);
 											if (chessMove === "O-O") {
 												const updatedPieces = pieces.reduce((results, piece) => {
 													if (turn === "w" && piece.image.includes("white_Rook")) {
@@ -279,31 +306,33 @@ export const Board = () => {
 		return (
 			<>
 				{promotionOptions && (
-					<div className="flex flex-row absolute bg-[rgba(0,0,0,0.7)] rounded-lg px-4 w-80 justify-evenly items-center h-80">
-						<img
-							onClick={(e) => promotePawn(e)}
-							className="w-min hover:bg-stone-400 rounded-lg p-5"
-							src={turn === "w" ? "assets/white_Queen.png" : "assets/black_Queen.png"}
-							alt=""
-						/>
-						<img
-							onClick={(e) => promotePawn(e)}
-							className="w-min hover:bg-stone-400 rounded-lg p-5"
-							src={turn === "w" ? "assets/white_Rook.png" : "assets/black_Rook.png"}
-							alt=""
-						/>
-						<img
-							onClick={(e) => promotePawn(e)}
-							className="w-min hover:bg-stone-400 rounded-lg p-5"
-							src={turn === "w" ? "assets/white_Knight.png" : "assets/black_Knight.png"}
-							alt=""
-						/>
-						<img
-							onClick={(e) => promotePawn(e)}
-							className="w-min hover:bg-stone-400 rounded-lg p-5"
-							src={turn === "w" ? "assets/white_Bishop.png" : "assets/black_Bishop.png"}
-							alt=""
-						/>
+					<div className="grid center place-content-center absolute left-0 top-0 right-0 bottom-0">
+						<div className="flex flex-row bg-[rgba(0,0,0,0.7)] rounded-lg px-4 w-80 justify-evenly items-center h-80 z-20">
+							<img
+								onClick={(e) => promotePawn(e)}
+								className="w-min hover:bg-stone-400 rounded-lg p-5"
+								src={turn === "w" ? "assets/white_Queen.png" : "assets/black_Queen.png"}
+								alt=""
+							/>
+							<img
+								onClick={(e) => promotePawn(e)}
+								className="w-min hover:bg-stone-400 rounded-lg p-5"
+								src={turn === "w" ? "assets/white_Rook.png" : "assets/black_Rook.png"}
+								alt=""
+							/>
+							<img
+								onClick={(e) => promotePawn(e)}
+								className="w-min hover:bg-stone-400 rounded-lg p-5"
+								src={turn === "w" ? "assets/white_Knight.png" : "assets/black_Knight.png"}
+								alt=""
+							/>
+							<img
+								onClick={(e) => promotePawn(e)}
+								className="w-min hover:bg-stone-400 rounded-lg p-5"
+								src={turn === "w" ? "assets/white_Bishop.png" : "assets/black_Bishop.png"}
+								alt=""
+							/>
+						</div>
 					</div>
 				)}
 				<div className="flex flex-col text-white">
