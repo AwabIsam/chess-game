@@ -26,16 +26,19 @@ export const Board = () => {
 		const horizontalaxis = ["a", "b", "c", "d", "e", "f", "g", "h"];
 		const verticalaxis = ["8", "7", "6", "5", "4", "3", "2", "1"];
 		const chessBoard = [];
+		const turn = chess.turn();
 
 		let elementSRC = "";
 		let chessMove = 0;
+		let movesAllowed = 0;
+		let delPiece = 0;
 		function promotePawn(e) {
 			elementSRC = e.target.attributes.src.nodeValue;
 			const updatedPieces = pieces.reduce((results, piece) => {
-				const movesAllowed = chess.moves({ square: `${piece.prePromotePos}` });
-				if (movesAllowed) {
-					console.log(piece);
-					const delPiece = pieces.find((p) => movesAllowed.some((move) => move.includes(p.currentPos)));
+				if (piece.promote === true) {
+					movesAllowed = chess.moves({ square: `${piece.currentPos}` });
+					delPiece = pieces.find((p) => movesAllowed.some((move) => move.includes(p.currentPos)));
+
 					for (let z of movesAllowed) {
 						if (elementSRC.includes("Queen")) {
 							if (z.includes("Q")) {
@@ -55,21 +58,35 @@ export const Board = () => {
 							}
 						}
 					}
-					console.log(delPiece);
-					// You are still conditioning to that the piece must have a prePromotePos, which is only the piece to be promoted so its the only one thats getting pushed
-					if (delPiece && delPiece.currentPos !== piece.currentPos) {
-						piece.image = elementSRC;
-						piece.currentPos = piece.tempMove;
-						results.push(piece);
+					const pushedPieces = pieces.reduce((newResults, piece) => {
+						console.log(delPiece);
+						console.log(piece);
+						if (delPiece) {
+							if (delPiece.currentPos !== piece.currentPos) {
+								newResults.push(piece);
+							}
+						} else {
+							newResults.push(piece);
+						}
+						return newResults;
+					}, []);
+
+					piece.image = elementSRC;
+					piece.currentPos = piece.tempMove;
+					piece.promote = false;
+					console.log(pushedPieces);
+					for (let k of pushedPieces) {
+						results.push(k);
 					}
 				}
 
 				return results;
 			}, []);
-
+			console.log(updatedPieces);
 			chess.move(chessMove);
 			setPieces(updatedPieces);
 			setPromotionOptions(false);
+			console.log(pieces);
 		}
 
 		function grabPiece(e) {
@@ -222,7 +239,6 @@ export const Board = () => {
 										}
 									} else if (movesAllowed.some((moves) => moves.includes("="))) {
 										console.log("Promotion Sequence Entered");
-										piece.prePromotePos = piece.currentPos;
 										piece.tempMove = move;
 										piece.x = x;
 										piece.y = y;
@@ -267,20 +283,25 @@ export const Board = () => {
 						<img
 							onClick={(e) => promotePawn(e)}
 							className="w-min hover:bg-stone-400 rounded-lg p-5"
-							src="assets/white_Queen.png"
-							alt=""
-						/>
-						<img onClick={(e) => promotePawn(e)} className="w-min hover:bg-stone-400 rounded-lg p-5" src="assets/white_Rook.png" alt="" />
-						<img
-							onClick={(e) => promotePawn(e)}
-							className="w-min hover:bg-stone-400 rounded-lg p-5"
-							src="assets/white_Knight.png"
+							src={turn === "w" ? "assets/white_Queen.png" : "assets/black_Queen.png"}
 							alt=""
 						/>
 						<img
 							onClick={(e) => promotePawn(e)}
 							className="w-min hover:bg-stone-400 rounded-lg p-5"
-							src="assets/white_Bishop.png"
+							src={turn === "w" ? "assets/white_Rook.png" : "assets/black_Rook.png"}
+							alt=""
+						/>
+						<img
+							onClick={(e) => promotePawn(e)}
+							className="w-min hover:bg-stone-400 rounded-lg p-5"
+							src={turn === "w" ? "assets/white_Knight.png" : "assets/black_Knight.png"}
+							alt=""
+						/>
+						<img
+							onClick={(e) => promotePawn(e)}
+							className="w-min hover:bg-stone-400 rounded-lg p-5"
+							src={turn === "w" ? "assets/white_Bishop.png" : "assets/black_Bishop.png"}
 							alt=""
 						/>
 					</div>
