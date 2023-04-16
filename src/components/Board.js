@@ -4,10 +4,9 @@ import { Pieces } from "../chess/model/PiecesStates";
 import { Chess } from "chess.js";
 
 const chess = new Chess();
-
 export const Board = () => {
 	const chessBoardRef = useRef(null);
-	while (!chess.isGameOver()) {
+	try {
 		const {
 			pieces,
 			setPieces,
@@ -38,7 +37,6 @@ export const Board = () => {
 			const updatedPieces = pieces.reduce((results, piece) => {
 				if (piece.promote === true) {
 					movesAllowed = chess.moves({ square: `${piece.currentPos}` });
-					delPiece = pieces.find((p) => movesAllowed.some((move) => move.includes(p.currentPos)));
 
 					for (let z of movesAllowed) {
 						if (elementSRC.includes("Queen")) {
@@ -59,6 +57,9 @@ export const Board = () => {
 							}
 						}
 					}
+					// delPiece = pieces.find((p) => movesAllowed.some((move) => move.includes(p.currentPos)));
+					delPiece = pieces.find((p) => chessMove.includes(p.currentPos));
+
 					const pushedPieces = pieces.reduce((newResults, piece) => {
 						console.log(delPiece);
 						console.log(piece);
@@ -86,10 +87,8 @@ export const Board = () => {
 			console.log(updatedPieces);
 			chess.move(chessMove);
 			fen = chess.fen();
-			console.log(fen);
 			setPieces(updatedPieces);
 			setPromotionOptions(false);
-			console.log(pieces);
 		}
 
 		function grabPiece(e) {
@@ -118,18 +117,41 @@ export const Board = () => {
 				activePiece.style.left = `${x}px`;
 				activePiece.style.top = `${y}px`;
 
+				if (x < minX || x > maxX || y < minY || y > maxY) {
+					activePiece.style.removeProperty("left");
+					activePiece.style.removeProperty("top");
+					setActivePiece(undefined);
+					return;
+				}
+
 				if (x < minX) {
 					activePiece.style.left = `${minX}px`;
+					activePiece.style.position = "relative";
+					activePiece.style.removeProperty("left");
+					activePiece.style.removeProperty("top");
+					setActivePiece(undefined);
 				} else if (x > maxX) {
 					activePiece.style.left = `${maxX}px`;
+					activePiece.style.position = "relative";
+					activePiece.style.removeProperty("left");
+					activePiece.style.removeProperty("top");
+					setActivePiece(undefined);
 				} else {
 					activePiece.style.left = `${x}px`;
 				}
 
 				if (y < minY) {
 					activePiece.style.top = `${minY}px`;
+					activePiece.style.position = "relative";
+					activePiece.style.removeProperty("left");
+					activePiece.style.removeProperty("top");
+					setActivePiece(undefined);
 				} else if (y > maxY) {
 					activePiece.style.top = `${maxY}px`;
+					activePiece.style.position = "relative";
+					activePiece.style.removeProperty("left");
+					activePiece.style.removeProperty("top");
+					setActivePiece(undefined);
 				} else {
 					activePiece.style.top = `${y}px`;
 				}
@@ -172,7 +194,6 @@ export const Board = () => {
 										try {
 											chess.move(`${chessMove}`);
 											fen = chess.fen();
-											console.log(fen);
 											const updatedPieces = pieces.reduce((results, piece) => {
 												if (delPiece.currentPos !== piece.currentPos) {
 													results.push(piece);
@@ -199,7 +220,6 @@ export const Board = () => {
 											setPieces(updatedPieces);
 										}
 										fen = chess.fen();
-										console.log(fen);
 										chess.move(chessMove);
 										piece.x = x;
 										piece.y = y;
@@ -211,8 +231,7 @@ export const Board = () => {
 
 											chess.move(`${chessMove}`);
 											fen = chess.fen();
-											console.log(fen);
-											if (chessMove === "O-O") {
+											if (chessMove === "O-O" || chessMove === "O-O+" || chessMove === "O-O#") {
 												const updatedPieces = pieces.reduce((results, piece) => {
 													if (turn === "w" && piece.image.includes("white_Rook")) {
 														if (piece.currentPos === "h1") {
@@ -235,7 +254,7 @@ export const Board = () => {
 												}, []);
 												setPieces(updatedPieces);
 											}
-											if (chessMove === "O-O-O") {
+											if (chessMove === "O-O-O" || chessMove === "O-O-O+" || chessMove === "O-O-O#") {
 												const updatedPieces = pieces.reduce((results, piece) => {
 													if (turn === "w" && piece.image.includes("white_Rook")) {
 														if (piece.currentPos === "a1") {
@@ -264,7 +283,10 @@ export const Board = () => {
 										} catch (error) {
 											console.log(error);
 										}
-									} else if (movesAllowed.some((moves) => moves.includes("="))) {
+									} else if (
+										movesAllowed.some((moves) => moves.includes("=")) &&
+										movesAllowed.some((moves) => moves.includes(chessMove))
+									) {
 										console.log("Promotion Sequence Entered");
 										piece.tempMove = move;
 										piece.x = x;
@@ -276,11 +298,11 @@ export const Board = () => {
 
 										activePiece.style.position = "relative";
 										activePiece.style.removeProperty("left");
-										activePiece.style.removeProperty("Top");
+										activePiece.style.removeProperty("top");
+										setActivePiece(undefined);
 									}
 								}
 							}
-							setActivePiece(undefined);
 						}
 						return piece;
 					});
@@ -305,63 +327,72 @@ export const Board = () => {
 
 		return (
 			<>
-				{promotionOptions && (
-					<div className="grid center place-content-center absolute left-0 top-0 right-0 bottom-0">
-						<div className="flex flex-row bg-[rgba(0,0,0,0.7)] rounded-lg px-4 w-80 justify-evenly items-center h-80 z-20">
-							<img
-								onClick={(e) => promotePawn(e)}
-								className="w-min hover:bg-stone-400 rounded-lg p-5"
-								src={turn === "w" ? "assets/white_Queen.png" : "assets/black_Queen.png"}
-								alt=""
-							/>
-							<img
-								onClick={(e) => promotePawn(e)}
-								className="w-min hover:bg-stone-400 rounded-lg p-5"
-								src={turn === "w" ? "assets/white_Rook.png" : "assets/black_Rook.png"}
-								alt=""
-							/>
-							<img
-								onClick={(e) => promotePawn(e)}
-								className="w-min hover:bg-stone-400 rounded-lg p-5"
-								src={turn === "w" ? "assets/white_Knight.png" : "assets/black_Knight.png"}
-								alt=""
-							/>
-							<img
-								onClick={(e) => promotePawn(e)}
-								className="w-min hover:bg-stone-400 rounded-lg p-5"
-								src={turn === "w" ? "assets/white_Bishop.png" : "assets/black_Bishop.png"}
-								alt=""
-							/>
-						</div>
-					</div>
-				)}
-				<div className="flex flex-col text-white">
-					{verticalaxis.map((axis) => (
-						<div className="h-16 mx-4" key={axis}>
-							{axis}
-						</div>
-					))}
-				</div>
-				<div className="flex flex-col text-center">
-					<div
-						onMouseMove={(e) => movePiece(e)}
-						onMouseDown={(e) => grabPiece(e)}
-						onMouseUp={(e) => dropPiece(e)}
-						ref={chessBoardRef}
-						className="grid grid-cols-8 border-8 border-white"
-					>
-						{chessBoard}
-					</div>
-					<div className="flex flex-row text-white">
-						{horizontalaxis.map((axis) => (
-							<div className="w-16" key={axis}>
-								{axis}
+				<div className="flex flex-col">
+					<div className="flex flex-row">
+						{promotionOptions && (
+							<div className="grid center place-content-center absolute left-0 top-0 right-0 bottom-0">
+								<div className="flex flex-row bg-[rgba(0,0,0,0.7)] rounded-lg px-4 w-80 justify-evenly items-center h-80 z-20">
+									<img
+										onClick={(e) => promotePawn(e)}
+										className="w-min hover:bg-stone-400 rounded-lg p-5"
+										src={turn === "w" ? "assets/white_Queen.png" : "assets/black_Queen.png"}
+										alt=""
+									/>
+									<img
+										onClick={(e) => promotePawn(e)}
+										className="w-min hover:bg-stone-400 rounded-lg p-5"
+										src={turn === "w" ? "assets/white_Rook.png" : "assets/black_Rook.png"}
+										alt=""
+									/>
+									<img
+										onClick={(e) => promotePawn(e)}
+										className="w-min hover:bg-stone-400 rounded-lg p-5"
+										src={turn === "w" ? "assets/white_Knight.png" : "assets/black_Knight.png"}
+										alt=""
+									/>
+									<img
+										onClick={(e) => promotePawn(e)}
+										className="w-min hover:bg-stone-400 rounded-lg p-5"
+										src={turn === "w" ? "assets/white_Bishop.png" : "assets/black_Bishop.png"}
+										alt=""
+									/>
+								</div>
 							</div>
-						))}
+						)}
+						<div className="flex flex-col text-white">
+							{verticalaxis.map((axis) => (
+								<div className="h-16 mx-4" key={axis}>
+									{axis}
+								</div>
+							))}
+						</div>
+						<div className="flex flex-col text-center">
+							<div
+								onMouseMove={(e) => movePiece(e)}
+								onMouseDown={(e) => grabPiece(e)}
+								onMouseUp={(e) => dropPiece(e)}
+								ref={chessBoardRef}
+								className="grid grid-cols-8 border-8 border-white"
+							>
+								{chessBoard}
+							</div>
+							<div className="flex flex-row text-white">
+								{horizontalaxis.map((axis) => (
+									<div className="w-16" key={axis}>
+										{axis}
+									</div>
+								))}
+							</div>
+						</div>
+					</div>
+					<div className="grid self-center mt-5 ml-6 content-center w-32 h-16 bg-stone-200 rounded-lg text-xl font-bold text-center">
+						{chess.isCheckmate() ? "CheckMate" : chess.isCheck() ? "Check" : "---"}
 					</div>
 				</div>
 			</>
 		);
+	} catch (error) {
+		console.log(error);
+		console.log("Game Over");
 	}
-	console.log("Game Over");
 };
