@@ -219,6 +219,17 @@ export const Board = () => {
 											}, []);
 											setPieces(updatedPieces);
 										}
+										if (move.includes("3")) {
+											const lowerSquare = `${chessX}4`;
+											const delPiece = pieces.find((p) => p.currentPos === lowerSquare);
+											const updatedPieces = pieces.reduce((results, piece) => {
+												if (delPiece.currentPos !== piece.currentPos) {
+													results.push(piece);
+												}
+												return results;
+											}, []);
+											setPieces(updatedPieces);
+										}
 										fen = chess.fen();
 										chess.move(chessMove);
 										piece.x = x;
@@ -370,7 +381,9 @@ export const Board = () => {
 							<div
 								onMouseMove={(e) => movePiece(e)}
 								onMouseDown={(e) => grabPiece(e)}
-								onMouseUp={(e) => dropPiece(e)}
+								onMouseUp={(e) => {
+									dropPiece(e);
+								}}
 								ref={chessBoardRef}
 								className="grid grid-cols-8 border-8 border-white"
 							>
@@ -385,8 +398,15 @@ export const Board = () => {
 							</div>
 						</div>
 					</div>
-					<div className="grid self-center mt-5 ml-6 content-center w-32 h-16 bg-stone-200 rounded-lg text-xl font-bold text-center">
-						{chess.isCheckmate() ? "CheckMate" : chess.isCheck() ? "Check" : "---"}
+					{chess.isCheckmate() && (
+						<div className="grid center place-content-center absolute left-0 top-0 right-0 bottom-0">
+							<div className="grid place-content-center absolute w-96 h-96 bg-[rgba(255,255,255,0.6)] top-[7rem] left-[37rem] rounded-lg text-red-600 text-3xl font-bold text-center">
+								CheckMate!!
+							</div>
+						</div>
+					)}
+					<div className="grid self-center mt-5 ml-6 content-center w-36 h-16 bg-stone-200 rounded-lg text-xl font-bold text-center">
+						{chess.isCheck() ? "Check" : chess.turn() === "w" ? "White to play" : chess.turn() === "b" ? "Black to play" : "---"}
 					</div>
 				</div>
 			</>
